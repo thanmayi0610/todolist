@@ -2,46 +2,80 @@ class Reminder {
     constructor(
         public id: string,
         public text: string,
-        public date: string
+        public date: string,
+        public completed: boolean = false
     ) {}
 }
 
 class ReminderDatabase {
-    private reminders: Reminder[] = [];
+    private reminders: Map<string, Reminder> = new Map();
 
-    createReminder(id: string, text: string, date: string) {
-        this.reminders.push(new Reminder(id, text, date));
+    private generateUniqueId(): string {
+        let id: string;
+        do {
+            id = Math.floor(100 + Math.random() * 9000).toString();
+        } while (this.reminders.has(id));
+        return id;
+    }
+
+    createReminder(text: string, date: string) {
+        const id = this.generateUniqueId();
+        this.reminders.set(id, new Reminder(id, text, date));
     }
 
     exists(id: string): boolean {
-        return this.reminders.some(reminder => reminder.id === id);
+        return this.reminders.has(id);
     }
 
     getAllReminders(): Reminder[] {
-        return this.reminders;
+        return Array.from(this.reminders.values());
     }
 
     getReminder(id: string): Reminder | null {
-        return this.reminders.find(reminder => reminder.id === id) || null;
+        return this.reminders.get(id) || null;
     }
 
     removeReminder(id: string): boolean {
-        const index = this.reminders.findIndex(reminder => reminder.id === id);
-        if (index !== -1) {
-            this.reminders.splice(index, 1);
-            return true;
-        }
-        return false;
+        return this.reminders.delete(id);
     }
 
     updateReminder(id: string, text: string, date: string): boolean {
-        const reminder = this.getReminder(id);
-        if (reminder) {
+        if (this.reminders.has(id)) {
+            const reminder = this.reminders.get(id)!;
             reminder.text = text;
             reminder.date = date;
             return true;
         }
         return false;
+    }
+
+    markReminderAsCompleted(id: string): boolean {
+        if (this.reminders.has(id)) {
+            this.reminders.get(id)!.completed = true;
+            return true;
+        }
+        return false;
+    }
+
+    unmarkReminderAsCompleted(id: string): boolean {
+        if (this.reminders.has(id)) {
+            this.reminders.get(id)!.completed = false;
+            return true;
+        }
+        return false;
+    }
+
+    getAllRemindersMarkedAsCompleted(): Reminder[] {
+        return Array.from(this.reminders.values()).filter(reminder => reminder.completed);
+    }
+
+    getAllRemindersNotMarkedAsCompleted(): Reminder[] {
+        return Array.from(this.reminders.values()).filter(reminder => !reminder.completed);
+    }
+
+    getAllRemindersDueByToday(): Reminder[] {
+        const today = new Date().toISOString().split('T')[0];
+        return Array.from(this.reminders.values()).filter(reminder => reminder.date === today);
     }
 }
 
@@ -61,16 +95,20 @@ const main = async () => {
         console.log("3. Get Reminder");
         console.log("4. Remove Reminder");
         console.log("5. Update Reminder");
-        console.log("6. Exit");
+        console.log("6. Mark Reminder as Completed");
+        console.log("7. Unmark Reminder as Completed");
+        console.log("8. View Completed Reminders");
+        console.log("9. View Pending Reminders");
+        console.log("10. View Reminders Due Today");
+        console.log("11. Exit");
 
         const choice = await getInput("Choose an option: ");
 
         switch (choice) {
             case "1": {
-                const id = await getInput("Enter ID: ");
                 const text = await getInput("Enter Reminder Text: ");
                 const date = await getInput("Enter Date (YYYY-MM-DD): ");
-                db.createReminder(id, text, date);
+                db.createReminder(text, date);
                 console.log("Reminder created successfully!");
                 break;
             }
@@ -95,7 +133,29 @@ const main = async () => {
                 console.log(db.updateReminder(id, text, date) ? "Reminder updated." : "Reminder not found.");
                 break;
             }
-            case "6":
+            case "6": {
+                const id = await getInput("Enter Reminder ID to mark as completed: ");
+                console.log(db.markReminderAsCompleted(id) ? "Reminder marked as completed." : "Reminder not found.");
+                break;
+            }
+            case "7": {
+                const id = await getInput("Enter Reminder ID to unmark as completed: ");
+                console.log(db.unmarkReminderAsCompleted(id) ? "Reminder unmarked as completed." : "Reminder not found.");
+                break;
+            }
+            case "8": {
+                console.log("Completed Reminders:", db.getAllRemindersMarkedAsCompleted());
+                break;
+            }
+            case "9": {
+                console.log("Pending Reminders:", db.getAllRemindersNotMarkedAsCompleted());
+                break;
+            }
+            case "10": {
+                console.log("Reminders Due Today:", db.getAllRemindersDueByToday());
+                break;
+            }
+            case "11":
                 console.log("Exiting...");
                 process.exit(0);
             default:
