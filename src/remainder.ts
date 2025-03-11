@@ -1,3 +1,5 @@
+import * as fs from "fs";
+
 class Reminder {
     constructor(
         public id: string,
@@ -9,6 +11,11 @@ class Reminder {
 
 class ReminderDatabase {
     private reminders: Map<string, Reminder> = new Map();
+    private filePath = "reminders.json";
+
+    constructor() {
+        this.loadFromFile();
+    }
 
     private generateUniqueId(): string {
         let id: string;
@@ -18,9 +25,21 @@ class ReminderDatabase {
         return id;
     }
 
+    private saveToFile() {
+        fs.writeFileSync(this.filePath, JSON.stringify(Array.from(this.reminders.entries())));
+    }
+
+    private loadFromFile() {
+        if (fs.existsSync(this.filePath)) {
+            const data = fs.readFileSync(this.filePath, "utf8");
+            this.reminders = new Map(JSON.parse(data));
+        }
+    }
+
     createReminder(text: string, date: string) {
         const id = this.generateUniqueId();
         this.reminders.set(id, new Reminder(id, text, date));
+        this.saveToFile();
     }
 
     exists(id: string): boolean {
@@ -36,7 +55,9 @@ class ReminderDatabase {
     }
 
     removeReminder(id: string): boolean {
-        return this.reminders.delete(id);
+        const result = this.reminders.delete(id);
+        this.saveToFile();
+        return result;
     }
 
     updateReminder(id: string, text: string, date: string): boolean {
@@ -44,6 +65,7 @@ class ReminderDatabase {
             const reminder = this.reminders.get(id)!;
             reminder.text = text;
             reminder.date = date;
+            this.saveToFile();
             return true;
         }
         return false;
@@ -52,6 +74,7 @@ class ReminderDatabase {
     markReminderAsCompleted(id: string): boolean {
         if (this.reminders.has(id)) {
             this.reminders.get(id)!.completed = true;
+            this.saveToFile();
             return true;
         }
         return false;
@@ -60,6 +83,7 @@ class ReminderDatabase {
     unmarkReminderAsCompleted(id: string): boolean {
         if (this.reminders.has(id)) {
             this.reminders.get(id)!.completed = false;
+            this.saveToFile();
             return true;
         }
         return false;
@@ -180,4 +204,3 @@ const main = async () => {
 };
 
 main();
-
