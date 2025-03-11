@@ -77,6 +77,16 @@ class ReminderDatabase {
         const today = new Date().toISOString().split('T')[0];
         return Array.from(this.reminders.values()).filter(reminder => reminder.date === today);
     }
+
+    displayReminders(reminders: Reminder[]) {
+        console.log("+------+----------------------+------------+-----------+");
+        console.log("|  ID  |       Text           |    Date    | Completed |");
+        console.log("+------+----------------------+------------+-----------+");
+        reminders.forEach(reminder => {
+            console.log(`| ${reminder.id.padEnd(4)} | ${reminder.text.padEnd(20)} | ${reminder.date} | ${reminder.completed ? 'Yes' : 'No '}       |`);
+        });
+        console.log("+------+----------------------+------------+-----------+");
+    }
 }
 
 const db = new ReminderDatabase();
@@ -113,12 +123,17 @@ const main = async () => {
                 break;
             }
             case "2": {
-                console.log("All Reminders:", db.getAllReminders());
+                db.displayReminders(db.getAllReminders());
                 break;
             }
             case "3": {
                 const id = await getInput("Enter Reminder ID: ");
-                console.log("Reminder:", db.getReminder(id));
+                const reminder = db.getReminder(id);
+                if (reminder) {
+                    db.displayReminders([reminder]);
+                } else {
+                    console.log("Reminder not found.");
+                }
                 break;
             }
             case "4": {
@@ -144,15 +159,15 @@ const main = async () => {
                 break;
             }
             case "8": {
-                console.log("Completed Reminders:", db.getAllRemindersMarkedAsCompleted());
+                db.displayReminders(db.getAllRemindersMarkedAsCompleted());
                 break;
             }
             case "9": {
-                console.log("Pending Reminders:", db.getAllRemindersNotMarkedAsCompleted());
+                db.displayReminders(db.getAllRemindersNotMarkedAsCompleted());
                 break;
             }
             case "10": {
-                console.log("Reminders Due Today:", db.getAllRemindersDueByToday());
+                db.displayReminders(db.getAllRemindersDueByToday());
                 break;
             }
             case "11":
@@ -165,3 +180,4 @@ const main = async () => {
 };
 
 main();
+
